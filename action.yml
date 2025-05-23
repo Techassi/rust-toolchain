@@ -21,7 +21,6 @@ inputs:
   rustup-version:
     description: The version of rustup used during installation
     required: false
-    default: 1.28.2
 
 outputs:
   cachekey:
@@ -71,26 +70,30 @@ runs:
       shell: bash
 
     - run: |
+        : Check and set rustup version
+        echo "Using rustup version $RUSTUP_VERSION"
+      shell: bash
+      if: inputs.rustup-version
+      env:
+        RUSTUP_VERSION: ${{ inputs.rustup-version }}
+
+    - run: |
         : install rustup if needed
         if ! command -v rustup &>/dev/null; then
-          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | RUSTUP_VERSION="$RUSTUP_VERSION" sh -s -- --default-toolchain none -y
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y
           echo "$CARGO_HOME/bin" >> $GITHUB_PATH
         fi
       if: runner.os != 'Windows'
-      env:
-        RUSTUP_VERSION: ${{ inputs.rustup-version }}
       shell: bash
 
     - run: |
         : install rustup if needed on windows
         if ! command -v rustup &>/dev/null; then
           curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://win.rustup.rs/${{runner.arch == 'ARM64' && 'aarch64' || 'x86_64'}} --output '${{runner.temp}}\rustup-init.exe'
-          RUSTUP_VERSION="$RUSTUP_VERSION" '${{runner.temp}}\rustup-init.exe' --default-toolchain none --no-modify-path -y
+          '${{runner.temp}}\rustup-init.exe' --default-toolchain none --no-modify-path -y
           echo "$CARGO_HOME\bin" >> $GITHUB_PATH
         fi
       if: runner.os == 'Windows'
-      env:
-        RUSTUP_VERSION: ${{ inputs.rustup-version }}
       shell: bash
 
     - name: rustup toolchain install ${{steps.parse.outputs.toolchain}}
