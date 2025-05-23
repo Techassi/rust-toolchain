@@ -70,26 +70,20 @@ runs:
       shell: bash
 
     - run: |
-        : Check and set rustup version
-        echo "Using rustup version $RUSTUP_VERSION"
-        echo "RUSTUP_VERSION=$RUSTUP_VERSION" | tee -a "$GITHUB_ENV"
-      shell: bash
-      if: inputs.rustup-version
-      env:
-        RUSTUP_VERSION: ${{ inputs.rustup-version }}
-
-    - run: |
         : install rustup if needed
-        export | grep "RUSTUP_VERSION"
+        [ -n "$RUSTUP_VERSION" ] && export RUSTUP_VERSION
         if ! command -v rustup &>/dev/null; then
           curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y
           echo "$CARGO_HOME/bin" >> $GITHUB_PATH
         fi
       if: runner.os != 'Windows'
       shell: bash
+      env:
+        RUSTUP_VERSION: ${{ inputs.rustup-version }}
 
     - run: |
         : install rustup if needed on windows
+        [ -n "$RUSTUP_VERSION" ] && export RUSTUP_VERSION
         if ! command -v rustup &>/dev/null; then
           curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://win.rustup.rs/${{runner.arch == 'ARM64' && 'aarch64' || 'x86_64'}} --output '${{runner.temp}}\rustup-init.exe'
           '${{runner.temp}}\rustup-init.exe' --default-toolchain none --no-modify-path -y
@@ -97,6 +91,8 @@ runs:
         fi
       if: runner.os == 'Windows'
       shell: bash
+      env:
+        RUSTUP_VERSION: ${{ inputs.rustup-version }}
 
     - name: rustup toolchain install ${{steps.parse.outputs.toolchain}}
       run: rustup toolchain install ${{steps.parse.outputs.toolchain}}${{steps.flags.outputs.targets}}${{steps.flags.outputs.components}} --profile minimal${{steps.flags.outputs.downgrade}} --no-self-update
